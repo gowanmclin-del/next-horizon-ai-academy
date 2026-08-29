@@ -5,6 +5,7 @@ const LINKS = [
   { label: "Orders", href: "/admin/orders" },
   { label: "Courses", href: "/admin/courses" },
   { label: "Certificates", href: "/admin/certificates" },
+  { label: "Partnerships", href: "/admin/partnerships" },
   { label: "Admins", href: "/admin/admins" },
   { label: "Activity", href: "/admin/activity" },
   { label: "Launch Readiness", href: "/admin/launch-readiness" },

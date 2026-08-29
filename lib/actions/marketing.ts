@@ -102,3 +102,58 @@ export async function submitLaunchSubscriber(
     return { ok: false, error: "Something went wrong signing you up. Please try again." };
   }
 }
+
+export interface CorporatePartnershipInput {
+  firstName: string;
+  lastName: string;
+  workEmail: string;
+  organization: string;
+  jobTitle: string;
+  organizationSize: string;
+  partnershipInterest: string;
+  learnerCount: string;
+  timeline: string;
+  goals: string;
+  website: string;
+}
+
+export async function submitCorporatePartnershipInquiry(
+  input: CorporatePartnershipInput
+): Promise<{ ok: boolean; error?: string }> {
+  if (input.website) return { ok: true };
+  if (!input.firstName.trim() || !input.lastName.trim() || !input.organization.trim()) {
+    return { ok: false, error: "Name and organization are required." };
+  }
+  if (!isValidEmail(input.workEmail)) {
+    return { ok: false, error: "Enter a valid work email address." };
+  }
+  if (!input.partnershipInterest || !input.goals.trim()) {
+    return { ok: false, error: "Select an area of interest and tell us about your goals." };
+  }
+  if (input.goals.trim().length > 2000) {
+    return { ok: false, error: "Please keep your goals under 2,000 characters." };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "This form isn't connected to a database yet in this environment." };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("corporate_partnership_inquiries").insert({
+      first_name: input.firstName.trim(),
+      last_name: input.lastName.trim(),
+      work_email: input.workEmail.trim().toLowerCase(),
+      organization: input.organization.trim(),
+      job_title: input.jobTitle.trim() || null,
+      organization_size: input.organizationSize || null,
+      partnership_interest: input.partnershipInterest,
+      learner_count: input.learnerCount || null,
+      timeline: input.timeline || null,
+      goals: input.goals.trim(),
+    });
+    if (error) return { ok: false, error: "We couldn't submit your inquiry. Please try again." };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "We couldn't submit your inquiry. Please try again." };
+  }
+}

@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "About", href: "/about" },
   { label: "Courses", href: "/courses" },
   { label: "Certifications", href: "/certifications" },
+  { label: "Partnerships", href: "/corporate-partnerships" },
   { label: "AI Horizon Network", href: "/network" },
   { label: "Resources", href: "/resources" },
   { label: "Contact", href: "/contact" },

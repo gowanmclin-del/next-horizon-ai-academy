@@ -43,8 +43,11 @@ export default function ContactPage() {
           <article className="rounded-2xl border border-slate-200 bg-white p-7">
             <h2 className="text-xl font-bold text-horizon-navy">Organizations</h2>
             <p className="mt-3 text-slate-600">
-              Partnership and workforce-learning inquiries are welcome — reach out using the contact option below.
+              Explore workforce pilots, sponsored cohorts, readiness assessments, and technology collaborations.
             </p>
+            <a href="/corporate-partnerships" className="mt-5 inline-block font-semibold text-horizon-blue">
+              Corporate Partnerships →
+            </a>
           </article>
 
           <article className="rounded-2xl border border-slate-200 bg-white p-7">
