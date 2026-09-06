@@ -1197,3 +1197,135 @@ export async function getLaunchReadiness(): Promise<ReadinessCheck[]> {
 
   return checks;
 }
+
+// ============================================================================
+// Corporate partnerships — Phase 23
+// ============================================================================
+export type CorporateLeadStatus = "new" | "contacted" | "qualified" | "proposal" | "pilot" | "partner" | "closed";
+export type CorporateLeadPriority = "low" | "normal" | "high" | "urgent";
+
+export interface CorporateLeadRow {
+  id: string;
+  organizationName: string;
+  contactName: string;
+  email: string;
+  jobTitle: string | null;
+  industry: string | null;
+  organizationSize: string | null;
+  interests: string[];
+  participantCount: string | null;
+  timeline: string | null;
+  goals: string | null;
+  status: CorporateLeadStatus;
+  priority: CorporateLeadPriority;
+  adminNotes: string | null;
+  nextFollowUpAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CorporateLeadFilters {
+  search?: string;
+  status?: string;
+  priority?: string;
+}
+
+export async function getCorporateLeads(filters: CorporateLeadFilters = {}): Promise<CorporateLeadRow[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("corporate_partnership_inquiries")
+    .select("id, organization_name, contact_name, email, job_title, industry, organization_size, interests, participant_count, timeline, goals, status, priority, admin_notes, next_follow_up_at, created_at, updated_at")
+    .order("created_at", { ascending: false });
+
+  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.priority) query = query.eq("priority", filters.priority);
+  if (filters.search?.trim()) {
+    const term = `%${filters.search.trim()}%`;
+    query = query.or(`organization_name.ilike.${term},contact_name.ilike.${term},email.ilike.${term},industry.ilike.${term}`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Could not load corporate leads: ${error.message}`);
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    organizationName: r.organization_name,
+    contactName: r.contact_name,
+    email: r.email,
+    jobTitle: r.job_title,
+    industry: r.industry,
+    organizationSize: r.organization_size,
+    interests: r.interests ?? [],
+    participantCount: r.participant_count,
+    timeline: r.timeline,
+    goals: r.goals,
+    status: r.status,
+    priority: r.priority,
+    adminNotes: r.admin_notes,
+    nextFollowUpAt: r.next_follow_up_at,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+export async function getCorporateLead(id: string): Promise<CorporateLeadRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("corporate_partnership_inquiries")
+    .select("id, organization_name, contact_name, email, job_title, industry, organization_size, interests, participant_count, timeline, goals, status, priority, admin_notes, next_follow_up_at, created_at, updated_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load corporate lead: ${error.message}`);
+  if (!data) return null;
+  const r: any = data;
+  return {
+    id: r.id, organizationName: r.organization_name, contactName: r.contact_name, email: r.email,
+    jobTitle: r.job_title, industry: r.industry, organizationSize: r.organization_size, interests: r.interests ?? [],
+    participantCount: r.participant_count, timeline: r.timeline, goals: r.goals, status: r.status, priority: r.priority,
+    adminNotes: r.admin_notes, nextFollowUpAt: r.next_follow_up_at, createdAt: r.created_at, updatedAt: r.updated_at,
+  };
+}
+
+export interface ReadinessAdminRow {
+  id: string;
+  organizationName: string;
+  contactName: string;
+  email: string;
+  organizationSize: string | null;
+  score: number;
+  level: string;
+  topPriority: string | null;
+  followUpStatus: string;
+  adminNotes: string | null;
+  linkedInquiryId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getReadinessAssessments(status?: string): Promise<ReadinessAdminRow[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("ai_readiness_assessments")
+    .select("id, organization_name, contact_name, email, organization_size, score, level, top_priority, follow_up_status, admin_notes, linked_inquiry_id, created_at, updated_at")
+    .order("created_at", { ascending: false });
+  if (status) query = query.eq("follow_up_status", status);
+  const { data, error } = await query;
+  if (error) throw new Error(`Could not load readiness assessments: ${error.message}`);
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id, organizationName: r.organization_name, contactName: r.contact_name, email: r.email,
+    organizationSize: r.organization_size, score: r.score, level: r.level, topPriority: r.top_priority,
+    followUpStatus: r.follow_up_status, adminNotes: r.admin_notes, linkedInquiryId: r.linked_inquiry_id,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  }));
+}
+
+export async function getReadinessAssessment(id: string): Promise<ReadinessAdminRow | null> {
+  const rows = await getReadinessAssessments();
+  return rows.find((r) => r.id === id) ?? null;
+}
+
+export async function getCorporatePipelineStats() {
+  const [leads, assessments] = await Promise.all([getCorporateLeads(), getReadinessAssessments()]);
+  const statusCounts = Object.fromEntries(["new","contacted","qualified","proposal","pilot","partner","closed"].map((s) => [s, leads.filter((l) => l.status === s).length]));
+  const dueFollowUps = leads.filter((l) => l.nextFollowUpAt && new Date(l.nextFollowUpAt).getTime() <= Date.now() && l.status !== "closed").length;
+  return { totalLeads: leads.length, totalAssessments: assessments.length, dueFollowUps, statusCounts };
+}
