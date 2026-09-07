@@ -11,6 +11,8 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { triggerCourseCompletionEmailIfNeeded } from "@/lib/actions/email";
 import DevBanner from "@/components/DevBanner";
+import CourseVideo from "@/components/learn/CourseVideo";
+import { AI101_ORIENTATION_VIDEO_ID, getAI101VideoId } from "@/lib/courseVideos";
 
 export default function LessonView({ course, lessonSlug }: { course: Course; lessonSlug: string }) {
   const configured = isSupabaseConfigured();
@@ -37,6 +39,8 @@ export default function LessonView({ course, lessonSlug }: { course: Course; les
 
   const complete = completedSlugs.includes(lessonSlug);
   const percent = computePercentComplete(course, completedSlugs);
+  const videoId = course.slug === "ai-101" ? getAI101VideoId(lessonSlug) : null;
+  const showOrientation = course.slug === "ai-101" && lessonSlug === "what-is-artificial-intelligence";
 
   async function handleMarkComplete() {
     if (!configured) return;
@@ -74,7 +78,17 @@ export default function LessonView({ course, lessonSlug }: { course: Course; les
       </div>
 
       <h1 className="font-heading text-2xl font-extrabold text-horizon-navy sm:text-3xl">{lesson.title}</h1>
-      <p className="mt-2 text-sm font-semibold text-slate-500">{lesson.durationMinutes} min read</p>
+      <p className="mt-2 text-sm font-semibold text-slate-500">{lesson.durationMinutes} min lesson</p>
+
+      {showOrientation && (
+        <div className="mt-8 rounded-2xl border border-horizon-gold/30 bg-horizon-gold/10 p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-horizon-gold">Start here</p>
+          <h2 className="mt-1 font-heading text-xl font-bold text-horizon-navy">Course Orientation</h2>
+          <CourseVideo videoId={AI101_ORIENTATION_VIDEO_ID} title="AI-101 Course Orientation" />
+        </div>
+      )}
+
+      {videoId && <CourseVideo videoId={videoId} title={`${lesson.title} — Next Horizon AI Academy`} />}
 
       <div className="mt-6 flex flex-col gap-4 text-base leading-relaxed text-slate-700">
         {lesson.content.split("\n\n").map((paragraph, i) => (

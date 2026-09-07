@@ -573,3 +573,63 @@ export async function createCourse(
     return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." };
   }
 }
+
+// ============================================================================
+// Corporate partnerships — Phase 23
+// ============================================================================
+export async function updateCorporateLead(input: {
+  inquiryId: string;
+  status: string;
+  priority: string;
+  adminNotes: string;
+  nextFollowUpAt: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const allowedStatuses = new Set(["new","contacted","qualified","proposal","pilot","partner","closed"]);
+  const allowedPriorities = new Set(["low","normal","high","urgent"]);
+  if (!allowedStatuses.has(input.status) || !allowedPriorities.has(input.priority)) {
+    return { ok: false, error: "Invalid lead status or priority." };
+  }
+  try {
+    const supabase = await assertAdmin();
+    const { error } = await supabase.rpc("admin_update_corporate_lead", {
+      p_inquiry_id: input.inquiryId,
+      p_status: input.status,
+      p_priority: input.priority,
+      p_admin_notes: input.adminNotes.trim() || null,
+      p_next_follow_up_at: input.nextFollowUpAt ? new Date(input.nextFollowUpAt).toISOString() : null,
+    });
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/admin/corporate");
+    revalidatePath(`/admin/corporate/${input.inquiryId}`);
+    revalidatePath("/admin/activity");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not update corporate lead." };
+  }
+}
+
+export async function updateReadinessFollowup(input: {
+  assessmentId: string;
+  followUpStatus: string;
+  adminNotes: string;
+  linkedInquiryId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const allowed = new Set(["new","reviewed","contacted","converted","closed"]);
+  if (!allowed.has(input.followUpStatus)) return { ok: false, error: "Invalid follow-up status." };
+  try {
+    const supabase = await assertAdmin();
+    const { error } = await supabase.rpc("admin_update_readiness_followup", {
+      p_assessment_id: input.assessmentId,
+      p_follow_up_status: input.followUpStatus,
+      p_admin_notes: input.adminNotes.trim() || null,
+      p_linked_inquiry_id: input.linkedInquiryId || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/admin/corporate/readiness");
+    revalidatePath(`/admin/corporate/readiness/${input.assessmentId}`);
+    revalidatePath("/admin/activity");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not update readiness follow-up." };
+  }
+}
