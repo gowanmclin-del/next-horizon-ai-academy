@@ -20,14 +20,51 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     if (!configured) return;
-    // Supabase's password-reset email link redirects here with a recovery
-    // token that it exchanges for a session automatically — we just need
-    // to confirm one exists before allowing a password update.
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
+    let active = true;
+
+    async function establishRecoverySession() {
+      const code = new URL(window.location.href).searchParams.get("code");
+
+      if (code) {
+        const { data, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code);
+
+        if (!active) return;
+
+        if (exchangeError) {
+          setError(exchangeError.message);
+          setHasRecoverySession(false);
+        } else {
+          setHasRecoverySession(Boolean(data.session));
+          window.history.replaceState({}, "", "/reset-password");
+        }
+        setCheckingSession(false);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
       setHasRecoverySession(Boolean(data.session));
       setCheckingSession(false);
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === "PASSWORD_RECOVERY" || session) {
+        setHasRecoverySession(true);
+        setCheckingSession(false);
+      }
     });
+
+    void establishRecoverySession();
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [configured]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,14 +114,20 @@ export default function ResetPasswordPage() {
             )}
 
             {configured && !checkingSession && !hasRecoverySession && (
-              <p role="alert" className="text-sm leading-relaxed text-red-600">
-                This reset link is missing or has expired. Request a new one
-                from the{" "}
-                <a href="/forgot-password" className="font-semibold underline">
-                  forgot password
-                </a>{" "}
-                page.
-              </p>
+              <div role="alert" className="space-y-3 text-sm leading-relaxed text-red-600">
+                <p>
+                  {error
+                    ? `We couldn’t verify this reset link: ${error}`
+                    : "This reset link is missing or has expired."}
+                </p>
+                <p>
+                  Request a new link from the{" "}
+                  <a href="/forgot-password" className="font-semibold underline">
+                    forgot password
+                  </a>{" "}
+                  page, then open the newest email on the same device and browser.
+                </p>
+              </div>
             )}
 
             {configured && hasRecoverySession && !submitted && (

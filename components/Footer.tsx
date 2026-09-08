@@ -14,10 +14,26 @@ const LEGAL_LINKS = [
 ];
 
 const SOCIAL_LINKS = [
-  { label: "LinkedIn", href: "#" },
-  { label: "Instagram", href: "#" },
-  { label: "Facebook", href: "#" },
-  { label: "YouTube", href: "#" },
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=61592307485113",
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/next-horizon-ai-academy-814660425",
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/nexthorizonaiacademy",
+  },
+  {
+    label: "TikTok",
+    href: "https://www.tiktok.com/@next.horizon.ai.a",
+  },
+  {
+    label: "YouTube",
+    href: "https://youtube.com/@nexthorizonaiacademy",
+  },
 ];
 
 export default function Footer() {
@@ -63,6 +79,8 @@ export default function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm text-slate-300 transition-colors hover:text-horizon-gold"
                   >
                     {link.label}
